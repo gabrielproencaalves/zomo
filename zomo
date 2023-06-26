@@ -1,0 +1,104 @@
+#!/bin/sh
+
+DISPLAY=":0"
+WORKTIME=0
+PAUSETIME=0
+LONGTIME=0
+MODE=""
+
+zinfo() {
+  zenity \
+    --info \
+    --title=" zomo" \
+    --width=300 \
+    --height=75 \
+    --text="$(date +%H:%M) - $1"
+}
+
+work() {
+  sleep $(($1 * 60)) \
+  && zinfo "Take a break"
+}
+
+pause() {
+  sleep $(($1 * 60)) \
+  && zinfo "Back to work"
+}
+
+main() {
+  if [ $1 == "-h" ] || [ $# -eq 0 ]; then
+    echo "USAGE: zomo <MODE> [OPTIONS]"
+    echo
+    echo "MODES:"
+    echo -e "\twork     - work cycle. default: 25 min"
+    echo -e "\tpause    - pause cycle. default: 5 min"
+    echo -e "\tlong     - long pause cycle. default: 15 min"
+    echo -e "\tfull     - four pomodoro cycles ended by a long pause"
+    echo -e "\tinfinite - endless full mode"
+    echo
+    echo "OPTIONS:"
+    echo -e "\t-wd - work duration"
+    echo -e "\t-pd - pause duration"
+    echo -e "\t-ld - long duration"
+    echo
+    return
+  fi
+  echo -n $$ > $HOME/.zomo.lock
+
+  MODE=$1
+  shift
+
+  while true; do
+    case $1 in
+      "-wd")
+        WORKTIME=$2
+        ;;
+      "-pd")
+        PAUSETIME=$2
+        ;;
+      "-ld")
+        LONGTIME=$2
+        ;;
+      *)
+        break
+        ;;
+    esac
+    shift 2
+  done
+
+  case $MODE in
+    "work")
+      work $WORKTIME
+      ;;
+    "pause")
+      pause $PAUSETIME
+      ;;
+    "long")
+      pause $LONGTIME
+      ;;
+    "full")
+      for i in $(seq 4); do
+        work $WORKTIME
+        pause $PAUSETIME
+      done
+      pause $LONGTIME
+      ;;
+    "infinite")
+      while true; do
+        for i in $(seq 4); do
+          work $WORKTIME
+          pause $PAUSETIME
+        done
+        pause $LONGTIME
+      done
+      ;;
+    "status")
+      if [ $(kill -0 $(cat $HOME/.zomo.lock)) -eq 0 ]; then
+       echo "Already running."
+      fi
+  esac
+
+  > $HOME/.zomo.lock
+}
+
+main $@
