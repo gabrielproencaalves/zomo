@@ -26,24 +26,24 @@ pause() {
 }
 
 main() {
-  if [ $1 == "-h" ] || [ $# -eq 0 ]; then
-    echo "USAGE: zomo <MODE> [OPTIONS]"
-    echo
-    echo "MODES:"
-    echo -e "\twork     - work cycle. default: 25 min"
-    echo -e "\tpause    - pause cycle. default: 5 min"
-    echo -e "\tlong     - long pause cycle. default: 15 min"
-    echo -e "\tfull     - four pomodoro cycles ended by a long pause"
-    echo -e "\tinfinite - endless full mode"
-    echo
-    echo "OPTIONS:"
-    echo -e "\t-wd - work duration"
-    echo -e "\t-pd - pause duration"
-    echo -e "\t-ld - long duration"
-    echo
+  if [ "$1" = "-h" ] || [ $# -eq 0 ]; then
+    printf "USAGE: zomo <MODE> [OPTIONS]\n"
+    printf "\n"
+    printf "MODES:\n"
+    printf "\twork     - work cycle. default: 25 min\n"
+    printf "\tpause    - pause cycle. default: 5 min\n"
+    printf "\tlong     - long pause cycle. default: 15 min\n"
+    printf "\tfull     - four pomodoro cycles ended by a long pause\n"
+    printf "\tinfinite - endless full mode\n"
+    printf "\n"
+    printf "OPTIONS:\n"
+    printf "\t-wd - work duration\n"
+    printf "\t-pd - pause duration\n"
+    printf "\t-ld - long duration\n"
+
     return
   fi
-  echo -n $$ > $HOME/.zomo.lock
+  echo $$ > $HOME/.zomo.lock
 
   MODE=$1
   shift
@@ -93,8 +93,11 @@ main() {
       done
       ;;
     "status")
-      if [ $(kill -0 $(cat $HOME/.zomo.lock)) -eq 0 ]; then
-       echo "Already running."
+      kill -0 $(cat $HOME/.zomo.lock)
+      if [ $? -eq 0 ]; then
+        echo "Already running."
+      else
+        echo "Not running."
       fi
   esac
 
