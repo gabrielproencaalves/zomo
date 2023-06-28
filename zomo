@@ -42,8 +42,17 @@ main() {
     printf "\t-ld - long duration\n"
 
     return
+  elif [ "$1" = "status" ]; then
+    if [ -e $HOME/.zomo.lock ]; then
+      echo "Already running."
+    else
+      echo "Not running"
+    fi
+  elif [ "$1" = "kill" ]; then
+    kill "$(cat $HOME/.zomo.lock)"
   fi
-  echo $$ > $HOME/.zomo.lock
+
+  printf "%i" $$ > $HOME/.zomo.lock
 
   MODE=$1
   shift
@@ -92,16 +101,9 @@ main() {
         pause $LONGTIME
       done
       ;;
-    "status")
-      kill -0 $(cat $HOME/.zomo.lock)
-      if [ $? -eq 0 ]; then
-        echo "Already running."
-      else
-        echo "Not running."
-      fi
   esac
 
-  > $HOME/.zomo.lock
+  rm $HOME/.zomo.lock
 }
 
 main $@
