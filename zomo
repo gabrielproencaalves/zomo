@@ -1,9 +1,9 @@
 #!/bin/sh
 
 DISPLAY=":0"
-WORKTIME=0
-PAUSETIME=0
-LONGTIME=0
+WORKTIME=25 # Default work duration period:        25 min
+PAUSETIME=5 # Default pause duration period:        5 min
+LONGTIME=15 # Default long pause duration period : 15 min
 MODE=""
 
 zinfo() {
@@ -48,8 +48,11 @@ main() {
     else
       echo "Not running"
     fi
+    return
   elif [ "$1" = "kill" ]; then
-    kill "$(cat $HOME/.zomo.lock)"
+    kill $(cat $HOME/.zomo.lock)
+    rm $HOME/.zomo.lock
+    return
   fi
 
   printf "%i" $$ > $HOME/.zomo.lock
