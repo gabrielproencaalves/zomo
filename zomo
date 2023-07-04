@@ -17,12 +17,12 @@ zinfo() {
 
 work() {
   sleep $(($1 * 60)) \
-  && zinfo "Take a break"
+  && zinfo "Take a break" &
 }
 
 pause() {
   sleep $(($1 * 60)) \
-  && zinfo "Back to work"
+  && zinfo "Back to work" &
 }
 
 main() {
@@ -40,22 +40,24 @@ main() {
     printf "\t-wd - work duration\n"
     printf "\t-pd - pause duration\n"
     printf "\t-ld - long duration\n"
-
     return
+
   elif [ "$1" = "status" ]; then
-    if [ -e $HOME/.zomo.lock ]; then
-      echo "Already running."
-    else
+    if [ -z "$(ps -x | grep '[z]omo [wplfi]' | awk '{print $1}')" ]; then
       echo "Not running"
+    else
+      echo "Already running."
     fi
     return
+
   elif [ "$1" = "kill" ]; then
-    kill $(cat $HOME/.zomo.lock)
-    rm $HOME/.zomo.lock
+    if kill "$(ps -x | grep '[z]omo [wplfi]' | awk '{print $1}')"; then
+      echo "Killed"
+    else
+      printf "\x1b\x5b1A\x1b\x5b2KNot running\n"
+    fi
     return
   fi
-
-  printf "%i" $$ > $HOME/.zomo.lock
 
   MODE=$1
   shift
@@ -89,24 +91,24 @@ main() {
       pause $LONGTIME
       ;;
     "full")
-      for i in $(seq 4); do
+      for i in $(seq 3); do
         work $WORKTIME
         pause $PAUSETIME
       done
+      work $WORKTIME
       pause $LONGTIME
       ;;
     "infinite")
       while true; do
-        for i in $(seq 4); do
+        for i in $(seq 3); do
           work $WORKTIME
           pause $PAUSETIME
         done
+        work $WORKTIME
         pause $LONGTIME
       done
       ;;
   esac
-
-  rm $HOME/.zomo.lock
 }
 
 main $@
