@@ -13,6 +13,7 @@ timer() {
     TIME_ELAPSED=$((TIME_ELAPSED + 1))
     echo "$$ $TIME_ELAPSED" > /tmp/zomo.lock
   done
+  rm /tmp/zomo.lock
 }
 
 zinfo() {
