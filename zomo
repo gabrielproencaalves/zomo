@@ -6,6 +6,15 @@ PAUSETIME=5 # Default pause duration period:        5 min
 LONGTIME=15 # Default long pause duration period : 15 min
 MODE=""
 
+timer() {
+  TIME_ELAPSED=0
+  while [ $TIME_ELAPSED -lt $1 ]; do
+    sleep 1
+    TIME_ELAPSED=$((TIME_ELAPSED + 1))
+    echo "$$ $TIME_ELAPSED" > /tmp/zomo.lock
+  done
+}
+
 zinfo() {
   zenity \
     --info \
@@ -16,48 +25,64 @@ zinfo() {
 }
 
 work() {
-  sleep $(($1 * 60)) \
-  && zinfo "Take a break" &
+  timer $(($1 * 60)) \
+  && zinfo "Take a break"
 }
 
 pause() {
-  sleep $(($1 * 60)) \
-  && zinfo "Back to work" &
+  timer $(($1 * 60)) \
+  && zinfo "Back to work"
+}
+
+show_usage() {
+  printf "USAGE: zomo <MODE> [OPTIONS]\n"
+  printf "\n"
+  printf "MODES:\n"
+  printf "\twork     - work cycle. default: 25 min\n"
+  printf "\tpause    - pause cycle. default: 5 min\n"
+  printf "\tlong     - long pause cycle. default: 15 min\n"
+  printf "\tfull     - four pomodoro cycles ended by a long pause\n"
+  printf "\tinfinite - endless full mode\n"
+  printf "\n"
+  printf "OPTIONS:\n"
+  printf "\t-wd - work duration\n"
+  printf "\t-pd - pause duration\n"
+  printf "\t-ld - long duration\n"
+  exit 0
+}
+
+show_status() {
+  {
+    exec 2> /dev/null;
+    kill -0 "-$(awk '{print $1}' /tmp/zomo.lock)";
+  }
+  if [ $? -eq 0 ]; then
+    ELAPSED=$(awk '{print $2}' /tmp/zomo.lock)
+    echo "Already running"
+    echo "Time elapsed: $((ELAPSED/60))m $((ELAPSED % 60))s"
+  else
+    echo "Not running"
+  fi
+
+  exit 0
+}
+
+kill_proc() {
+  {
+    exec 2> /dev/null;
+    kill -- "-$(awk '{print $1}' /tmp/zomo.lock)";
+  }
+  if [ $? -eq 0 ]; then
+    echo "Killed"
+  else
+    echo "Not running"
+  fi
+  rm /tmp/zomo.lock 2> /dev/null
+
+  exit 0
 }
 
 main() {
-  if [ "$1" = "-h" ] || [ $# -eq 0 ]; then
-    printf "USAGE: zomo <MODE> [OPTIONS]\n"
-    printf "\n"
-    printf "MODES:\n"
-    printf "\twork     - work cycle. default: 25 min\n"
-    printf "\tpause    - pause cycle. default: 5 min\n"
-    printf "\tlong     - long pause cycle. default: 15 min\n"
-    printf "\tfull     - four pomodoro cycles ended by a long pause\n"
-    printf "\tinfinite - endless full mode\n"
-    printf "\n"
-    printf "OPTIONS:\n"
-    printf "\t-wd - work duration\n"
-    printf "\t-pd - pause duration\n"
-    printf "\t-ld - long duration\n"
-    return
-
-  elif [ "$1" = "status" ]; then
-    if [ -z "$(ps -x | grep '[z]omo [wplfi]' | awk '{print $1}')" ]; then
-      echo "Not running"
-    else
-      echo "Already running."
-    fi
-    return
-
-  elif [ "$1" = "kill" ]; then
-    if kill "$(ps -x | grep '[z]omo [wplfi]' | awk '{print $1}')"; then
-      echo "Killed"
-    else
-      printf "\x1b\x5b1A\x1b\x5b2KNot running\n"
-    fi
-    return
-  fi
 
   MODE=$1
   shift
@@ -111,4 +136,12 @@ main() {
   esac
 }
 
-main $@
+if [ "$1" = "-h" ] || [ $# -eq 0 ]; then
+  show_usage
+elif [ "$1" = "status" ]; then
+  show_status
+elif [ "$1" = "kill" ]; then
+  kill_proc
+fi
+
+( main $@ ) &
