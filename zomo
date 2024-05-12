@@ -8,10 +8,11 @@ MODE=""
 
 timer() {
   TIME_ELAPSED=0
+  ACTUAL_CYCLE="$2"
   while [ $TIME_ELAPSED -lt $1 ]; do
     sleep 1
     TIME_ELAPSED=$((TIME_ELAPSED + 1))
-    echo "$$ $TIME_ELAPSED" > /tmp/zomo.lock
+    echo "$$ $TIME_ELAPSED $ACTUAL_CYCLE" > /tmp/zomo.lock
   done
   rm /tmp/zomo.lock
 }
@@ -26,12 +27,12 @@ zinfo() {
 }
 
 work() {
-  timer $(($1 * 60)) \
+  timer $(($1 * 60)) work \
   && zinfo "Take a break"
 }
 
 pause() {
-  timer $(($1 * 60)) \
+  timer $(($1 * 60)) pause \
   && zinfo "Back to work"
 }
 
@@ -61,7 +62,8 @@ show_status() {
   }
   if [ $? -eq 0 ]; then
     ELAPSED=$(awk '{print $2}' /tmp/zomo.lock)
-    echo "Already running"
+    TYPE=$(awk '{print $3}' /tmp/zomo.lock)
+    echo "Already running on a $TYPE cycle."
     echo "Time elapsed: $((ELAPSED/60))m $((ELAPSED % 60))s"
   else
     echo "Not running"
